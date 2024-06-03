@@ -146,16 +146,28 @@ async def deploy_to_server(server_name, scripts_dir, input_dir, output_dir, scri
     if conn is None:
         return
 
-    await install_local_configure_environment(local_dir)
+    if not os.path.isdir(local_dir):
+        logger.error(f"The directory {local_dir} does not exist.")
+    else:
+        await install_local_configure_environment(local_dir)
 
     # Установка и настройка окружения на удаленном сервере
-    await install_configure_environment(conn, scripts_dir)
+    if not os.path.isdir(scripts_dir):
+        logger.error(f"The directory {scripts_dir} does not exist.")
+    else:
+        await install_configure_environment(conn, scripts_dir)
 
-    # Отправка файлов на сервер
-    await send_files_to_server(conn, output_dir, input_dir)
+    if not os.path.isdir(input_dir) or not os.path.isdir(output_dir):
+        logger.error(f"The directory {input_dir} or {output_dir} does not exist.")
+    else:
+        # Отправка файлов на сервер
+        await send_files_to_server(conn, output_dir, input_dir)
 
-    # Настройка после развертывания на сервере
-    await post_deploy_configuration(conn, scripts_dir_deploy)
+    if not os.path.isdir(scripts_dir_deploy):
+        logger.error(f"The directory {scripts_dir_deploy} does not exist.")
+    else:
+        # Настройка после развертывания на сервере
+        await post_deploy_configuration(conn, scripts_dir_deploy)
 
     # Закрыть соединение
     conn.close()
@@ -175,18 +187,6 @@ def main():
     output_dir = config.dest
     local_dir = config.local_scripts
     scripts_dir_deploy = config.postdeploy_scripts
-
-    if not os.path.isdir(scripts_dir):
-        logger.error(f"The directory {scripts_dir} does not exist.")
-    if not os.path.isdir(input_dir):
-        logger.error(f"The directory {input_dir} does not exist.")
-    if not os.path.isdir(output_dir):
-        logger.error(f"The directory {output_dir} does not exist.")
-    if not os.path.isdir(local_dir):
-        logger.error(f"The directory {local_dir} does not exist.")
-    if not os.path.isdir(scripts_dir_deploy):
-        logger.error(f"The directory {scripts_dir_deploy} does not exist.")
-
 
     # Запуск развертывания на сервере
     asyncio.run(deploy_to_server(server_name, scripts_dir, input_dir, output_dir, scripts_dir_deploy, local_dir))
